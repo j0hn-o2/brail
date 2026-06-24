@@ -2,12 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Calendar, TrendingUp, Target, Users, Moon, Sun } from 'lucide-react';
+import { useState } from 'react';
+import { LayoutDashboard, Calendar, TrendingUp, Target, Users, MessageSquare, User, Moon, Sun, LifeBuoy, MessageCircle, LogOut } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 export function Navigation() {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const userInitial = 'A';
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
@@ -15,6 +18,7 @@ export function Navigation() {
     { id: 'performance', label: 'Performance', icon: TrendingUp, href: '/performance' },
     { id: 'goals', label: 'Goals', icon: Target, href: '/goals' },
     { id: 'peers', label: 'Peer Support', icon: Users, href: '/peers' },
+    { id: 'ai-chat', label: 'AI Chat', icon: MessageSquare, href: '/ai-chat' },
   ];
 
   const isActive = (href: string) => {
@@ -55,13 +59,59 @@ export function Navigation() {
             })}
           </div>
 
-          <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="p-2 rounded-lg hover:bg-accent transition-colors"
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
+          <div className="flex items-center gap-2 relative">
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileMenu((current) => !current)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-500 transition-colors"
+                aria-label="Open profile menu"
+              >
+                {userInitial}
+              </button>
+              {showProfileMenu ? (
+                <div className="absolute right-0 top-full mt-3 w-56 overflow-hidden rounded-3xl border border-border bg-card shadow-xl shadow-slate-900/10">
+                  <div className="space-y-1 p-3">
+                    <button
+                      type="button"
+                      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                      className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm text-foreground hover:bg-accent transition"
+                    >
+                      {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                      {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
+                    </button>
+                    <Link
+                      href="/profile"
+                      className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm text-foreground hover:bg-accent transition"
+                    >
+                      <User className="w-4 h-4" />
+                      Profile
+                    </Link>
+                    <Link
+                      href="/support"
+                      className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm text-foreground hover:bg-accent transition"
+                    >
+                      <LifeBuoy className="w-4 h-4" />
+                      Support
+                    </Link>
+                    <Link
+                      href="/feedback"
+                      className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm text-foreground hover:bg-accent transition"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      Feedback
+                    </Link>
+                    <button
+                      type="button"
+                      className="mt-2 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm text-foreground hover:bg-accent transition"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
         </div>
 
         <div className="md:hidden flex gap-1 overflow-x-auto pb-2 -mx-4 px-4">

@@ -1,10 +1,16 @@
 'use client';
 
-import { Calendar, Clock, Plus, Settings, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { Calendar, Clock, Plus, Settings, Sparkles, User, Lock, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { useState } from 'react';
 
 export function StudyPlanner() {
+  const { theme, setTheme } = useTheme();
   const [selectedDay, setSelectedDay] = useState('Monday');
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [timetableInput, setTimetableInput] = useState('Monday 9:00-11:00 Calculus II\nTuesday 14:00-16:00 Physics\nWednesday 18:00-19:00 English');
+  const [generatedPlan, setGeneratedPlan] = useState<string | null>(null);
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -46,6 +52,15 @@ export function StudyPlanner() {
 
   const schedule = scheduleData[selectedDay] || [];
 
+  const handleGeneratePlan = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setGeneratedPlan(
+      timetableInput.trim()
+        ? `Generated study plan from your timetable input:\n${timetableInput}`
+        : 'Please add your weekly timetable above to generate a plan.'
+    );
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
@@ -53,15 +68,84 @@ export function StudyPlanner() {
           <h2 className="text-3xl font-semibold mb-2">AI Study Planner</h2>
           <p className="text-muted-foreground">Personalized schedule optimized for your success</p>
         </div>
-        <div className="flex gap-2">
+        <div className="relative flex gap-2">
           <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg flex items-center gap-2 hover:shadow-lg transition-shadow">
             <Sparkles className="w-4 h-4" />
             Regenerate Plan
           </button>
-          <button className="p-2 border border-border rounded-lg hover:bg-accent transition-colors">
+          <button
+            onClick={() => setShowSettingsMenu((current) => !current)}
+            className="px-4 py-2 border border-border rounded-lg inline-flex items-center gap-2 hover:bg-accent transition-colors"
+          >
             <Settings className="w-5 h-5" />
+            Settings
+            {showSettingsMenu ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
+          {showSettingsMenu ? (
+            <div className="absolute right-0 top-full mt-3 w-[320px] rounded-3xl border border-border bg-card p-4 shadow-xl shadow-slate-900/10">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold">Planner Settings</p>
+                  <p className="text-xs text-muted-foreground">Theme and account preferences</p>
+                </div>
+                <button
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className="rounded-full bg-blue-600 px-3 py-1 text-white text-xs"
+                >
+                  {theme === 'dark' ? 'Light' : 'Dark'} mode
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-border bg-muted p-3">
+                  <div className="flex items-center gap-3">
+                    <User className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-medium">Account</span>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">Manage your profile, passwords, and preferences.</p>
+                  <Link href="/profile" className="mt-3 inline-flex items-center gap-2 rounded-full bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-500 transition-colors">
+                    <Lock className="w-4 h-4" />
+                    Open Profile
+                  </Link>
+                </div>
+                <div className="rounded-2xl border border-border bg-muted p-3">
+                  <div className="flex items-center gap-3">
+                    <MessageSquare className="w-4 h-4 text-purple-600" />
+                    <span className="text-sm font-medium">AI Help</span>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">Use the dedicated AI chat page for planning assistance.</p>
+                  <Link href="/ai-chat" className="mt-3 inline-flex items-center gap-2 rounded-full bg-purple-600 px-3 py-2 text-sm text-white hover:bg-purple-500 transition-colors">
+                    Chat with AI
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
+      </div>
+
+      <div className="bg-card border border-border rounded-xl p-6 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Calendar className="w-5 h-5 text-blue-600" />
+          <h3 className="text-lg font-semibold">Weekly Timetable Input</h3>
+        </div>
+        <form onSubmit={handleGeneratePlan} className="space-y-4">
+          <textarea
+            value={timetableInput}
+            onChange={(event) => setTimetableInput(event.target.value)}
+            placeholder="Enter your weekly timetable. Example:\nMonday 09:00-11:00 Calculus II\nTuesday 14:00-16:00 Physics"
+            className="w-full min-h-[140px] rounded-3xl border border-border bg-background px-4 py-3 text-sm text-foreground shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          />
+          <button className="inline-flex items-center gap-2 rounded-3xl bg-gradient-to-r from-blue-600 to-purple-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:shadow-xl transition">
+            <Plus className="w-4 h-4" />
+            Generate Study Plan
+          </button>
+        </form>
+        {generatedPlan ? (
+          <div className="mt-6 rounded-3xl border border-border bg-slate-50 p-4 text-sm text-foreground dark:bg-slate-950/70">
+            <p className="font-semibold mb-2">Generated Plan Preview</p>
+            <pre className="whitespace-pre-wrap text-sm text-muted-foreground">{generatedPlan}</pre>
+          </div>
+        ) : null}
       </div>
 
       <div className="bg-card border border-border rounded-xl p-6 mb-6">

@@ -152,9 +152,12 @@ export function Dashboard() {
               </div>
             ))}
           </div>
-          <button className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-shadow">
+          <Link
+            href="/ai-chat"
+            className="w-full mt-4 inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-shadow"
+          >
             Ask AI for Help
-          </button>
+          </Link>
         </div>
 
         <div className="bg-card border border-border rounded-xl p-6">
