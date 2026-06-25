@@ -16,7 +16,7 @@ import {
   TrendingUp,
   UsersRound,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 
 import { HeaderNav, type NavItem } from "@/components/dashboard/header-nav";
 import { Panel } from "@/components/dashboard/panel";
@@ -29,6 +29,86 @@ import { ScheduleList, type ScheduleItem } from "./schedule-list";
 import { SubjectFilter } from "./subject-filter";
 import { TaskList, type PlannerTask } from "./task-list";
 import { WeeklyCalendar, type CalendarDay } from "./weekly-calendar";
+
+const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+const timetableSlots = [
+  "12am",
+  "2am",
+  "4am",
+  "6am",
+  "8am",
+  "10am",
+  "12pm",
+  "2pm",
+  "4pm",
+  "6pm",
+  "8pm",
+  "10pm",
+] as const;
+
+function AvailabilityGrid({
+  unavailable,
+  onToggle,
+}: {
+  unavailable: boolean[][];
+  onToggle: (dayIndex: number, slotIndex: number) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-neutral-500">
+        Click any block to mark when you are unavailable for study sessions.
+      </p>
+
+      <div className="overflow-x-auto rounded-[16px] border border-neutral-200 bg-neutral-50 p-3">
+        <div className="grid min-w-[840px] grid-cols-[90px_repeat(7,minmax(0,1fr))] gap-px bg-neutral-200">
+          <div className="bg-white px-3 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
+            Time
+          </div>
+          {weekDays.map((day) => (
+            <div
+              key={day}
+              className="bg-white px-3 py-3 text-center text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500"
+            >
+              {day}
+            </div>
+          ))}
+
+          {timetableSlots.map((slot, slotIndex) => (
+            <Fragment key={slot}>
+              <div className="bg-white px-3 py-3 text-sm font-medium text-neutral-700">
+                {slot}
+              </div>
+              {weekDays.map((day, dayIndex) => {
+                const isUnavailable = unavailable[dayIndex]?.[slotIndex];
+                return (
+                  <button
+                    key={`${day}-${slot}`}
+                    type="button"
+                    aria-pressed={isUnavailable}
+                    onClick={() => onToggle(dayIndex, slotIndex)}
+                    className={
+                      "min-h-[56px] px-2 py-3 text-left text-sm transition " +
+                      (isUnavailable
+                        ? "bg-blue-600 text-white"
+                        : "bg-white text-neutral-700 hover:bg-slate-100")
+                    }
+                  >
+                    <span className="block text-xs font-semibold">
+                      {isUnavailable ? "Busy" : "Free"}
+                    </span>
+                  </button>
+                );
+              })}
+            </Fragment>
+          ))}
+        </div>
+      </div>
+      <div className="text-sm text-neutral-500">
+        The planner can use this unavailable grid to avoid scheduling study sessions during classes or other busy times.
+      </div>
+    </div>
+  );
+}
 
 const navItems: NavItem[] = [
   { label: "Dashboard", icon: Grid2X2, href: "/" },
@@ -195,6 +275,11 @@ const recommendations: Recommendation[] = [
 
 export function StudyPlannerPage() {
   const [selectedSubject, setSelectedSubject] = useState("All");
+  const [unavailable, setUnavailable] = useState<boolean[][]>(() =>
+    Array.from({ length: weekDays.length }, () =>
+      Array(timetableSlots.length).fill(false),
+    ),
+  );
 
   const filteredSchedule = useMemo(
     () =>
@@ -287,6 +372,21 @@ export function StudyPlannerPage() {
               <p className="mt-1 text-sm text-neutral-500">{item.label}</p>
             </div>
           ))}
+        </section>
+
+        <section className="mt-7">
+          <Panel title="Weekly Unavailable Times">
+            <AvailabilityGrid
+              unavailable={unavailable}
+              onToggle={(dayIndex, slotIndex) =>
+                setUnavailable((prev) => {
+                  const next = prev.map((row) => row.slice());
+                  next[dayIndex][slotIndex] = !next[dayIndex][slotIndex];
+                  return next;
+                })
+              }
+            />
+          </Panel>
         </section>
       </main>
 

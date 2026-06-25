@@ -5,14 +5,34 @@ import { Calendar, Clock, Plus, Settings, Sparkles, User, Lock, MessageSquare, C
 import { useTheme } from 'next-themes';
 import { useState } from 'react';
 
+const timetableSlots = [
+  '12am',
+  '2am',
+  '4am',
+  '6am',
+  '8am',
+  '10am',
+  '12pm',
+  '2pm',
+  '4pm',
+  '6pm',
+  '8pm',
+  '10pm',
+] as const;
+
+const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+
 export function StudyPlanner() {
   const { theme, setTheme } = useTheme();
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
-  const [timetableInput, setTimetableInput] = useState('Monday 9:00-11:00 Calculus II\nTuesday 14:00-16:00 Physics\nWednesday 18:00-19:00 English');
+  const [timetableImage, setTimetableImage] = useState<File | null>(null);
   const [generatedPlan, setGeneratedPlan] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState<boolean[][]>(
+    Array.from({ length: weekDays.length }, () => Array(timetableSlots.length).fill(false)),
+  );
 
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const days = [...weekDays];
 
   const scheduleData: Record<string, Array<{ time: string; subject: string; task: string; duration: string; priority: string }>> = {
     Monday: [
@@ -54,11 +74,11 @@ export function StudyPlanner() {
 
   const handleGeneratePlan = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setGeneratedPlan(
-      timetableInput.trim()
-        ? `Generated study plan from your timetable input:\n${timetableInput}`
-        : 'Please add your weekly timetable above to generate a plan.'
-    );
+    if (timetableImage) {
+      setGeneratedPlan(`Uploaded timetable image: ${timetableImage.name}`);
+    } else {
+      setGeneratedPlan('Please upload a timetable image to generate a plan.');
+    }
   };
 
   return (
@@ -129,12 +149,20 @@ export function StudyPlanner() {
           <h3 className="text-lg font-semibold">Weekly Timetable Input</h3>
         </div>
         <form onSubmit={handleGeneratePlan} className="space-y-4">
-          <textarea
-            value={timetableInput}
-            onChange={(event) => setTimetableInput(event.target.value)}
-            placeholder="Enter your weekly timetable. Example:\nMonday 09:00-11:00 Calculus II\nTuesday 14:00-16:00 Physics"
-            className="w-full min-h-[140px] rounded-3xl border border-border bg-background px-4 py-3 text-sm text-foreground shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-          />
+          <label className="flex flex-col gap-2 rounded-3xl border border-border bg-slate-50 px-4 py-4 text-sm text-neutral-700">
+            <span className="font-medium">Upload timetable image</span>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(event) => setTimetableImage(event.target.files?.[0] ?? null)}
+              className="cursor-pointer text-sm text-neutral-700 file:mr-4 file:rounded-full file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-blue-700"
+            />
+            {timetableImage ? (
+              <p className="text-sm text-neutral-500">Selected file: {timetableImage.name}</p>
+            ) : (
+              <p className="text-sm text-neutral-500">Upload a photo of your school timetable, and we will process it in the backend.</p>
+            )}
+          </label>
           <button className="inline-flex items-center gap-2 rounded-3xl bg-gradient-to-r from-blue-600 to-purple-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:shadow-xl transition">
             <Plus className="w-4 h-4" />
             Generate Study Plan

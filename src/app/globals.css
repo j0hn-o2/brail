@@ -1,2 +1,17 @@
 @import '../styles/tailwind.css';
 @import '../styles/theme.css';
+
+:root {
+  scroll-behavior: smooth;
+}
+
+header,
+main {
+  transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
+html.sidebar-open header,
+html.sidebar-open main {
+  margin-left: 18rem;
+  width: calc(100% - 18rem);
+}

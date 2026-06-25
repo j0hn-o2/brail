@@ -30,10 +30,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-screen flex flex-col bg-background text-foreground">
+      <body className="min-h-screen bg-background text-foreground">
         <ClientThemeProvider>
           <ConditionalNavigation />
-          <main className="flex-1 overflow-y-auto">
+          <main className="min-h-screen overflow-y-auto">
             {children}
           </main>
         </ClientThemeProvider>
