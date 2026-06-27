@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { LayoutDashboard, Calendar, TrendingUp, Target, Users, MessageSquare, User, Moon, Sun, LifeBuoy, MessageCircle, LogOut, Menu, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { signOut, useSession } from 'next-auth/react';
 
 export function Navigation() {
   const pathname = usePathname();
@@ -12,7 +13,10 @@ export function Navigation() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
-  const userInitial = 'A';
+  const { data: session } = useSession();
+  const userName = session?.user?.name ?? 'User';
+  const userEmail = session?.user?.email ?? '';
+  const userInitial = userName.charAt(0).toUpperCase() || 'U';
 
   const topNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
@@ -124,8 +128,8 @@ export function Navigation() {
                       {userInitial}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-neutral-950">Nicholas</p>
-                      <p className="text-xs text-neutral-500">nicasant8@gmail.com</p>
+                      <p className="text-sm font-semibold text-neutral-950">{userName}</p>
+                      <p className="text-xs text-neutral-500">{userEmail}</p>
                     </div>
                   </div>
                 </div>
@@ -161,6 +165,10 @@ export function Navigation() {
                   </Link>
                   <button
                     type="button"
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      void signOut({ callbackUrl: '/login' });
+                    }}
                     className="mt-2 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm text-foreground hover:bg-accent transition"
                   >
                     <LogOut className="w-4 h-4" />

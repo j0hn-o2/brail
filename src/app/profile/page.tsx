@@ -1,6 +1,12 @@
+'use client';
+
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 
 export default function ProfilePage() {
+  const { data: session } = useSession();
+  const userName = session?.user?.name ?? 'User';
+  const userEmail = session?.user?.email ?? 'No email available';
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="rounded-[2rem] border border-border bg-card p-8 shadow-xl shadow-slate-900/5">
@@ -19,11 +25,11 @@ export default function ProfilePage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <p className="font-medium text-foreground">Name</p>
-                  <p>Alex Morgan</p>
+                  <p>{userName}</p>
                 </div>
                 <div>
                   <p className="font-medium text-foreground">Email</p>
-                  <p>alex@school.edu</p>
+                  <p>{userEmail}</p>
                 </div>
               </div>
               <div className="rounded-3xl border border-border bg-card p-4">

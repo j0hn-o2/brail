@@ -1,9 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { TrendingUp, Calendar, Users, Target, BookOpen, Award } from 'lucide-react';
+import { TrendingUp, Calendar, BookOpen, Award } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 export function Dashboard() {
+  const { data: session } = useSession();
+  const userName = session?.user?.name ?? 'there';
   const stats = [
     { label: 'Current GPA', value: '3.7', change: '+0.2', icon: TrendingUp, color: 'from-blue-500 to-blue-600' },
     { label: 'Study Hours', value: '24h', change: '+8h', icon: BookOpen, color: 'from-purple-500 to-purple-600' },
@@ -27,8 +30,8 @@ export function Dashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h2 className="text-3xl font-semibold mb-2">Welcome back, Alex! 👋</h2>
-        <p className="text-muted-foreground">Here's your academic overview for today</p>
+        <h2 className="text-3xl font-semibold mb-2">Welcome back, {userName}! 👋</h2>
+        <p className="text-muted-foreground">Here&apos;s your academic overview for today</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

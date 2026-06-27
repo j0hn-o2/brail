@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ai_chats {
+  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id      String    @db.Uuid
+  prompt       String
+  response     String
+  context_used String?
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  users        users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ai_chat_user")
+
+  @@index([user_id], map: "idx_ai_chats_user")
+}
+
+model courses {
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  course_code      String             @unique @db.VarChar(20)
+  course_name      String             @db.VarChar(255)
+  credit_hours     Int?
+  department       String?            @db.VarChar(255)
+  level            Int?
+  description      String?
+  created_at       DateTime?          @default(now()) @db.Timestamp(6)
+  resources        resources[]
+  student_courses  student_courses[]
+  study_groups     study_groups[]
+  study_plan_items study_plan_items[]
+  tasks            tasks[]
+  timetable        timetable[]
+  weak_areas       weak_areas[]
+
+  @@index([course_code], map: "idx_courses_code")
+}
+
+model notifications {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id    String    @db.Uuid
+  title      String    @db.VarChar(255)
+  message    String
+  type       String?   @db.VarChar(50)
+  is_read    Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_notification_user")
+
+  @@index([user_id], map: "idx_notifications_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model resources {
+  id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  course_id     String    @db.Uuid
+  title         String    @db.VarChar(255)
+  file_url      String
+  resource_type String?   @db.VarChar(50)
+  uploaded_by   String?   @db.Uuid
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  courses       courses   @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_resource_course")
+  users         users?    @relation(fields: [uploaded_by], references: [id], onUpdate: NoAction, map: "fk_resource_user")
+}
+
+model semesters {
+  id              String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name            String            @db.VarChar(100)
+  academic_year   String            @db.VarChar(50)
+  start_date      DateTime?         @db.Date
+  end_date        DateTime?         @db.Date
+  is_active       Boolean?          @default(false)
+  created_at      DateTime?         @default(now()) @db.Timestamp(6)
+  student_courses student_courses[]
+}
+
+model student_courses {
+  id               String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id          String    @db.Uuid
+  course_id        String    @db.Uuid
+  semester_id      String    @db.Uuid
+  lecturer         String?   @db.VarChar(255)
+  current_grade    String?   @db.VarChar(5)
+  attendance       Decimal?  @db.Decimal(5, 2)
+  confidence_score Decimal?  @db.Decimal(5, 2)
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
+  courses          courses   @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_student_course_course")
+  semesters        semesters @relation(fields: [semester_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_student_course_semester")
+  users            users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_student_course_user")
+
+  @@index([course_id], map: "idx_student_courses_course")
+  @@index([user_id], map: "idx_student_courses_user")
+}
+
+model study_group_members {
+  id           String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  group_id     String       @db.Uuid
+  user_id      String       @db.Uuid
+  role         String?      @default("member") @db.VarChar(50)
+  joined_at    DateTime?    @default(now()) @db.Timestamp(6)
+  study_groups study_groups @relation(fields: [group_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_group_member_group")
+  users        users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_group_member_user")
+}
+
+model study_groups {
+  id                  String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name                String                @db.VarChar(255)
+  course_id           String                @db.Uuid
+  creator_id          String                @db.Uuid
+  max_members         Int?                  @default(10)
+  created_at          DateTime?             @default(now()) @db.Timestamp(6)
+  study_group_members study_group_members[]
+  courses             courses               @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_group_course")
+  users               users                 @relation(fields: [creator_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_group_creator")
+}
+
+model study_plan_items {
+  id               String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  study_plan_id    String      @db.Uuid
+  course_id        String?     @db.Uuid
+  task             String?     @db.VarChar(255)
+  scheduled_time   DateTime?   @db.Timestamp(6)
+  duration_minutes Int?
+  status           String?     @default("pending") @db.VarChar(20)
+  created_at       DateTime?   @default(now()) @db.Timestamp(6)
+  courses          courses?    @relation(fields: [course_id], references: [id], onUpdate: NoAction, map: "fk_plan_item_course")
+  study_plans      study_plans @relation(fields: [study_plan_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_plan_item_plan")
+}
+
+model study_plans {
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id          String             @db.Uuid
+  title            String?            @db.VarChar(255)
+  generated_by_ai  Boolean?           @default(true)
+  start_date       DateTime?          @db.Date
+  end_date         DateTime?          @db.Date
+  created_at       DateTime?          @default(now()) @db.Timestamp(6)
+  study_plan_items study_plan_items[]
+  users            users              @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_study_plan_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tasks {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id     String    @db.Uuid
+  course_id   String?   @db.Uuid
+  title       String    @db.VarChar(255)
+  description String?
+  task_type   String?   @db.VarChar(50)
+  due_date    DateTime? @db.Timestamp(6)
+  priority    String?   @db.VarChar(20)
+  status      String?   @default("pending") @db.VarChar(20)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+  courses     courses?  @relation(fields: [course_id], references: [id], onUpdate: NoAction, map: "fk_task_course")
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_task_user")
+
+  @@index([due_date], map: "idx_tasks_due_date")
+  @@index([user_id], map: "idx_tasks_user")
+}
+
+model timetable {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id     String    @db.Uuid
+  course_id   String    @db.Uuid
+  day_of_week String    @db.VarChar(20)
+  start_time  DateTime  @db.Time(6)
+  end_time    DateTime  @db.Time(6)
+  venue       String?   @db.VarChar(255)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  courses     courses   @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_timetable_course")
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_timetable_user")
+}
+
+model users {
+  id                  String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  google_id           String?               @unique @db.VarChar(255)
+  email               String                @unique @db.VarChar(255)
+  full_name           String                @db.VarChar(255)
+  student_id          String?               @unique @db.VarChar(100)
+  college             String?               @db.VarChar(255)
+  department          String?               @db.VarChar(255)
+  level               Int?
+  cwa                 Decimal?              @db.Decimal(4, 2)
+  profile_image       String?
+  created_at          DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?             @default(now()) @db.Timestamp(6)
+  ai_chats            ai_chats[]
+  notifications       notifications[]
+  resources           resources[]
+  student_courses     student_courses[]
+  study_group_members study_group_members[]
+  study_groups        study_groups[]
+  study_plans         study_plans[]
+  tasks               tasks[]
+  timetable           timetable[]
+  weak_areas          weak_areas[]
+
+  @@index([email], map: "idx_users_email")
+}
+
+model weak_areas {
+  id             String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id        String    @db.Uuid
+  course_id      String    @db.Uuid
+  topic          String    @db.VarChar(255)
+  weakness_score Decimal?  @db.Decimal(5, 2)
+  detected_from  String?
+  recommendation String?
+  updated_at     DateTime? @default(now()) @db.Timestamp(6)
+  courses        courses   @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_weak_area_course")
+  users          users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_weak_area_user")
+}
