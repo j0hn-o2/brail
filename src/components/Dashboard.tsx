@@ -30,7 +30,7 @@ export function Dashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h2 className="text-3xl font-semibold mb-2">Welcome back, {userName}! 👋</h2>
+        <h2 className="text-3xl font-semibold mb-2">Welcome back, {userName}!</h2>
         <p className="text-muted-foreground">Here&apos;s your academic overview for today</p>
       </div>
 
@@ -159,7 +159,7 @@ export function Dashboard() {
             href="/ai-chat"
             className="w-full mt-4 inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-shadow"
           >
-            Ask AI for Help
+            Open AI help preview
           </Link>
         </div>
 

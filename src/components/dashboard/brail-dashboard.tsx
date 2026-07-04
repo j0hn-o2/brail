@@ -112,7 +112,7 @@ export function BrailDashboard() {
       <main className="mx-auto w-full max-w-[1268px] px-5 pb-16 pt-12 sm:px-8 lg:px-10">
         <section className="space-y-3">
           <h1 className="text-[26px] font-semibold tracking-normal text-neutral-950">
-            Welcome back, Alex! <span aria-hidden="true">👋</span>
+            Welcome back, Alex!
           </h1>
           <p className="text-lg text-neutral-500">
             Here&apos;s your academic overview for today

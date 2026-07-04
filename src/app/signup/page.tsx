@@ -1,16 +1,60 @@
 'use client';
 
+import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function SignupPage() {
   const router = useRouter();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleGoogleSignIn = () => {
     signIn('google', {
       callbackUrl: '/dashboard',
       prompt: 'select_account',
     });
+  };
+
+  const handleCredentialsSignup = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+    setIsSubmitting(true);
+
+    const response = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    if (!response.ok) {
+      const data = (await response.json().catch(() => null)) as { message?: string } | null;
+      setError(data?.message ?? 'Unable to create your account.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+    });
+
+    setIsSubmitting(false);
+
+    if (result?.error) {
+      setError('Account created, but automatic login failed. Please log in.');
+      return;
+    }
+
+    router.push('/dashboard');
+    router.refresh();
   };
 
   return (
@@ -22,7 +66,7 @@ export default function SignupPage() {
           <p className="mt-3 text-muted-foreground">Start building a smarter study routine in minutes.</p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           <button
             type="button"
             onClick={handleGoogleSignIn}
@@ -42,72 +86,80 @@ export default function SignupPage() {
             <span className="text-xs uppercase tracking-[0.3em] text-muted-foreground">or</span>
             <div className="h-px flex-1 bg-border" />
           </div>
-        </div>
 
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            router.push('/login');
-          }}
-          className="space-y-6"
-        >
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
-              Full name
-            </label>
-            <input
-              id="name"
-              type="text"
-              placeholder="Your full name"
-              className="w-full rounded-2xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-              required
-            />
-          </div>
+          <form onSubmit={handleCredentialsSignup} className="space-y-5">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
+                Full name
+              </label>
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Your full name"
+                className="w-full rounded-2xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                autoComplete="name"
+                required
+              />
+            </div>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
-              Email address
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              className="w-full rounded-2xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-              required
-            />
-          </div>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+                Email address
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@example.com"
+                className="w-full rounded-2xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                autoComplete="email"
+                required
+              />
+            </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="Create a password"
-              className="w-full rounded-2xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-              required
-            />
-          </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Create a password"
+                className="w-full rounded-2xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                autoComplete="new-password"
+                minLength={8}
+                required
+              />
+              <p className="mt-2 text-xs text-muted-foreground">Use at least 8 characters.</p>
+            </div>
 
-          <button
-            type="submit"
-            className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-violet-600 px-5 py-3 text-white text-sm font-semibold shadow-lg shadow-blue-500/10 transition hover:shadow-xl"
-          >
-            Create account
-          </button>
+            {error ? (
+              <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </p>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-violet-600 px-5 py-3 text-white text-sm font-semibold shadow-lg shadow-blue-500/10 transition hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isSubmitting ? 'Creating account...' : 'Create account'}
+            </button>
+          </form>
 
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{' '}
-            <button
-              type="button"
-              onClick={() => router.push('/login')}
-              className="font-semibold text-primary hover:underline"
-            >
+            <Link href="/login" className="font-semibold text-primary hover:underline">
               Login
-            </button>
+            </Link>
           </p>
-        </form>
+        </div>
       </div>
     </div>
   );

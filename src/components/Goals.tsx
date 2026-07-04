@@ -1,6 +1,6 @@
 'use client';
 
-import { Target, Plus, Trophy, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { Award, Flame, Handshake, Rocket, Target, Plus, Trophy, TrendingUp, CheckCircle2 } from 'lucide-react';
 
 export function Goals() {
   const semesterGoals = [
@@ -51,10 +51,10 @@ export function Goals() {
   ];
 
   const achievements = [
-    { title: 'Week Warrior', description: '7-day study streak', icon: '🔥', color: 'from-orange-500 to-red-600' },
-    { title: 'Perfect Week', description: '100% task completion', icon: '✨', color: 'from-blue-500 to-purple-600' },
-    { title: 'Team Player', description: 'Helped 10 peers', icon: '🤝', color: 'from-green-500 to-emerald-600' },
-    { title: 'Fast Learner', description: '+15% improvement', icon: '🚀', color: 'from-pink-500 to-rose-600' },
+    { title: 'Week Warrior', description: '7-day study streak', icon: Flame, color: 'from-orange-500 to-red-600' },
+    { title: 'Perfect Week', description: '100% task completion', icon: Award, color: 'from-blue-500 to-purple-600' },
+    { title: 'Team Player', description: 'Helped 10 peers', icon: Handshake, color: 'from-green-500 to-emerald-600' },
+    { title: 'Fast Learner', description: '+15% improvement', icon: Rocket, color: 'from-pink-500 to-rose-600' },
   ];
 
   return (
@@ -71,16 +71,19 @@ export function Goals() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {achievements.map((achievement) => (
-          <div
-            key={achievement.title}
-            className={`bg-gradient-to-br ${achievement.color} rounded-xl p-6 text-white hover:shadow-xl transition-shadow`}
-          >
-            <div className="text-4xl mb-3">{achievement.icon}</div>
-            <h4 className="text-white mb-1 font-semibold">{achievement.title}</h4>
-            <p className="text-white/90 text-sm">{achievement.description}</p>
-          </div>
-        ))}
+        {achievements.map((achievement) => {
+          const Icon = achievement.icon;
+          return (
+            <div
+              key={achievement.title}
+              className={`bg-gradient-to-br ${achievement.color} rounded-xl p-6 text-white hover:shadow-xl transition-shadow`}
+            >
+              <Icon className="mb-3 h-9 w-9 text-white" />
+              <h4 className="text-white mb-1 font-semibold">{achievement.title}</h4>
+              <p className="text-white/90 text-sm">{achievement.description}</p>
+            </div>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -138,7 +141,7 @@ export function Goals() {
           <div className="bg-card border border-border rounded-xl p-6">
             <div className="flex items-center gap-2 mb-6">
               <CheckCircle2 className="w-5 h-5 text-green-600" />
-              <h3 className="text-lg font-semibold">This Week's Goals</h3>
+              <h3 className="text-lg font-semibold">This Week&apos;s Goals</h3>
             </div>
             <div className="space-y-3">
               {weeklyGoals.map((goal, index) => (
@@ -178,7 +181,7 @@ export function Goals() {
             <Trophy className="w-12 h-12 text-white mb-4" />
             <h3 className="text-white mb-2 font-semibold">Weekly Progress</h3>
             <div className="text-3xl font-semibold mb-1">87%</div>
-            <p className="text-white/90 text-sm mb-4">You're doing great! Keep up the momentum.</p>
+            <p className="text-white/90 text-sm mb-4">You&apos;re doing great! Keep up the momentum.</p>
             <div className="flex items-center gap-2 text-sm">
               <TrendingUp className="w-4 h-4" />
               <span>+12% from last week</span>

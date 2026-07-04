@@ -15,15 +15,15 @@ export default function SupportPage() {
           <div className="rounded-3xl border border-border bg-background p-6 shadow-sm">
             <h2 className="text-lg font-semibold mb-4">Common Questions</h2>
             <ul className="space-y-3 text-sm text-muted-foreground">
-              <li>• How do I update my study schedule?</li>
-              <li>• How can I change my theme or account settings?</li>
-              <li>• What should I do if my AI plan is not accurate?</li>
+              <li>How do I update my study schedule?</li>
+              <li>How can I change my theme or account settings?</li>
+              <li>What should I do if my AI plan is not accurate?</li>
             </ul>
           </div>
           <div className="rounded-3xl border border-border bg-background p-6 shadow-sm">
             <h2 className="text-lg font-semibold mb-4">Contact Support</h2>
             <p className="text-sm text-muted-foreground">
-              If you need more help, send us a message and we'll respond as soon as possible.
+              If you need more help, send us a message and we&apos;ll respond as soon as possible.
             </p>
             <button className="mt-6 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-500 transition-colors">
               Message Support
