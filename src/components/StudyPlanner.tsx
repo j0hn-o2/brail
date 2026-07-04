@@ -16,7 +16,7 @@ import {
   User,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
@@ -47,6 +47,13 @@ type GenerateSummary = {
   classCount: number;
   courseCount: number;
   plannedHours: number;
+};
+
+type StudyPlanResponse = {
+  planId?: string;
+  sessions?: GeneratedSession[];
+  summary?: GenerateSummary | null;
+  message?: string;
 };
 
 type PlannerPreferences = {
@@ -155,6 +162,35 @@ export function StudyPlanner() {
     }));
   }, [generatedSessions]);
 
+  useEffect(() => {
+    let isCurrent = true;
+
+    async function loadSavedPlan() {
+      const response = await fetch('/api/study-plan/generate');
+
+      if (response.status === 401) return;
+
+      const data = (await response.json().catch(() => null)) as StudyPlanResponse | null;
+
+      if (!isCurrent || !response.ok || !data?.sessions?.length) return;
+
+      setGeneratedSessions(data.sessions);
+      setSummary(data.summary ?? null);
+      setSelectedDay(data.sessions[0]?.dayOfWeek ?? 'Monday');
+      setStatusMessage('Loaded your saved study timetable.');
+    }
+
+    loadSavedPlan().catch(() => {
+      if (isCurrent) {
+        setErrorMessage('Could not load your saved study timetable.');
+      }
+    });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
   const handleExtractTimetable = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage('');
@@ -217,33 +253,34 @@ export function StudyPlanner() {
     setStatusMessage('');
     setIsGenerating(true);
 
-    const response = await fetch('/api/study-plan/generate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        rows: extractedRows,
-        preferences,
-      }),
-    });
+    try {
+      const response = await fetch('/api/study-plan/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rows: extractedRows,
+          preferences,
+        }),
+      });
 
-    const data = (await response.json().catch(() => null)) as {
-      sessions?: GeneratedSession[];
-      summary?: GenerateSummary;
-      message?: string;
-    } | null;
-    setIsGenerating(false);
+      const data = (await response.json().catch(() => null)) as StudyPlanResponse | null;
 
-    if (!response.ok || !data?.sessions) {
-      setErrorMessage(data?.message ?? 'Could not generate a study plan.');
-      return;
+      if (!response.ok || !data?.sessions) {
+        setErrorMessage(data?.message ?? 'Could not generate a study plan.');
+        return;
+      }
+
+      setGeneratedSessions(data.sessions);
+      setSummary(data.summary ?? null);
+      setSelectedDay(data.sessions[0]?.dayOfWeek ?? 'Monday');
+      setStatusMessage('Personal study timetable generated and saved to your account.');
+    } catch {
+      setErrorMessage('Could not generate a study plan.');
+    } finally {
+      setIsGenerating(false);
     }
-
-    setGeneratedSessions(data.sessions);
-    setSummary(data.summary ?? null);
-    setSelectedDay(data.sessions[0]?.dayOfWeek ?? 'Monday');
-    setStatusMessage('Personal study timetable generated from your confirmed class rows.');
   };
 
   return (

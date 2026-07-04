@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
+import { prisma } from "@/lib/prisma";
 
 const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const;
 
@@ -44,6 +45,27 @@ type GeneratedSession = {
   reason: string;
 };
 
+type SessionUser = {
+  id?: string;
+  email?: string | null;
+};
+
+type SavedStudyPlan = {
+  id: string;
+  start_date: Date | string | null;
+  end_date: Date | string | null;
+  study_plan_items: Array<{
+    id: string;
+    task: string | null;
+    scheduled_time: Date | string | null;
+    duration_minutes: number | null;
+    courses: {
+      course_code: string;
+      course_name: string;
+    } | null;
+  }>;
+};
+
 function toMinutes(value: string) {
   const [hours = "0", minutes = "0"] = value.split(":");
   return Number(hours) * 60 + Number(minutes);
@@ -74,11 +96,220 @@ function sessionsPerCourse(intensity: PlannerPreferences["intensity"]) {
   return 2;
 }
 
+async function getCurrentUserId(sessionUser: SessionUser) {
+  if (sessionUser.id) return sessionUser.id;
+
+  const email = sessionUser.email?.trim().toLowerCase();
+  if (!email) return "";
+
+  const user = await prisma.users.findUnique({ where: { email } });
+  return user?.id ?? "";
+}
+
+function getWeekBounds() {
+  const now = new Date();
+  const startDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const day = startDate.getUTCDay();
+  const daysSinceMonday = (day + 6) % 7;
+  startDate.setUTCDate(startDate.getUTCDate() - daysSinceMonday);
+
+  const endDate = new Date(startDate);
+  endDate.setUTCDate(startDate.getUTCDate() + 6);
+
+  return { startDate, endDate };
+}
+
+function scheduledDateForSession(weekStart: Date, session: GeneratedSession) {
+  const dayIndex = weekDays.indexOf(session.dayOfWeek as (typeof weekDays)[number]);
+  const [hours = "0", minutes = "0"] = session.startTime.split(":");
+  const date = new Date(weekStart);
+  date.setUTCDate(weekStart.getUTCDate() + Math.max(dayIndex, 0));
+  date.setUTCHours(Number(hours), Number(minutes), 0, 0);
+  return date;
+}
+
+function dayFromDate(value: Date) {
+  return weekDays[(value.getUTCDay() + 6) % 7];
+}
+
+function formatStoredTime(value: Date) {
+  return `${value.getUTCHours().toString().padStart(2, "0")}:${value.getUTCMinutes().toString().padStart(2, "0")}`;
+}
+
+function buildSavedSessions(plan: SavedStudyPlan): GeneratedSession[] {
+  return plan.study_plan_items
+    .filter((item) => item.scheduled_time)
+    .map((item) => {
+      const scheduledTime = new Date(item.scheduled_time as Date | string);
+      const durationMinutes = item.duration_minutes ?? 60;
+      const endTime = new Date(scheduledTime);
+      endTime.setUTCMinutes(scheduledTime.getUTCMinutes() + durationMinutes);
+      const [task = "Study session", reason = "Loaded from your saved study plan."] = (item.task ?? "").split("||");
+      const subject = item.courses
+        ? `${item.courses.course_code} - ${item.courses.course_name}`
+        : "Study session";
+
+      return {
+        id: item.id,
+        dayOfWeek: dayFromDate(scheduledTime),
+        startTime: formatStoredTime(scheduledTime),
+        endTime: formatStoredTime(endTime),
+        subject,
+        task: task.trim() || "Study session",
+        durationMinutes,
+        priority: "medium" as const,
+        reason: reason.trim() || "Loaded from your saved study plan.",
+      };
+    })
+    .sort(
+      (a, b) =>
+        weekDays.indexOf(a.dayOfWeek as (typeof weekDays)[number]) -
+          weekDays.indexOf(b.dayOfWeek as (typeof weekDays)[number]) ||
+        toMinutes(a.startTime) - toMinutes(b.startTime),
+    );
+}
+
+async function savePlanForUser(userId: string, rows: TimetableRow[], sessions: GeneratedSession[]) {
+  const { startDate, endDate } = getWeekBounds();
+  const courseRecords = new Map<string, { id: string }>();
+  const courses = Array.from(new Map(rows.map((row) => [row.courseCode, row])).values());
+
+  for (const course of courses) {
+    const record = (await prisma.courses.upsert({
+      where: { course_code: course.courseCode },
+      update: {
+        course_name: course.courseName || course.courseCode,
+      },
+      create: {
+        course_code: course.courseCode,
+        course_name: course.courseName || course.courseCode,
+      },
+      select: { id: true },
+    })) as { id: string };
+
+    courseRecords.set(course.courseCode, record);
+  }
+
+  const existingPlan = (await prisma.study_plans.findFirst({
+    where: {
+      user_id: userId,
+      title: "Generated Study Timetable",
+      generated_by_ai: true,
+    },
+    select: { id: true },
+  })) as { id: string } | null;
+
+  if (existingPlan) {
+    await prisma.study_plan_items.deleteMany({
+      where: { study_plan_id: existingPlan.id },
+    });
+
+    await prisma.study_plans.update({
+      where: { id: existingPlan.id },
+      data: {
+        start_date: startDate,
+        end_date: endDate,
+      },
+    });
+  }
+
+  const plan = (existingPlan ??
+    ((await prisma.study_plans.create({
+      data: {
+        user_id: userId,
+        title: "Generated Study Timetable",
+        generated_by_ai: true,
+        start_date: startDate,
+        end_date: endDate,
+      },
+      select: { id: true },
+    })) as { id: string }));
+
+  await prisma.study_plan_items.createMany({
+    data: sessions.map((session) => {
+      const courseCode = session.subject.split(" - ")[0]?.trim();
+      const course = courseRecords.get(courseCode);
+
+      return {
+        study_plan_id: plan.id,
+        course_id: course?.id,
+        task: `${session.task} || ${session.reason}`,
+        scheduled_time: scheduledDateForSession(startDate, session),
+        duration_minutes: session.durationMinutes,
+        status: "pending",
+      };
+    }),
+  });
+
+  return plan.id;
+}
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  const sessionUser = session?.user as SessionUser | undefined;
+
+  if (!sessionUser) {
+    return NextResponse.json({ message: "Sign in before loading a study plan." }, { status: 401 });
+  }
+
+  const userId = await getCurrentUserId(sessionUser);
+
+  if (!userId) {
+    return NextResponse.json({ message: "Could not find your account." }, { status: 404 });
+  }
+
+  const plan = (await prisma.study_plans.findFirst({
+    where: {
+      user_id: userId,
+      title: "Generated Study Timetable",
+      generated_by_ai: true,
+    },
+    orderBy: { created_at: "desc" },
+    include: {
+      study_plan_items: {
+        orderBy: { scheduled_time: "asc" },
+        include: {
+          courses: {
+            select: {
+              course_code: true,
+              course_name: true,
+            },
+          },
+        },
+      },
+    },
+  })) as SavedStudyPlan | null;
+
+  if (!plan) {
+    return NextResponse.json({ sessions: [], summary: null });
+  }
+
+  const sessions = buildSavedSessions(plan);
+  const courseCodes = new Set(plan.study_plan_items.map((item) => item.courses?.course_code).filter(Boolean));
+
+  return NextResponse.json({
+    planId: plan.id,
+    sessions,
+    summary: {
+      classCount: 0,
+      courseCount: courseCodes.size,
+      plannedHours: Math.round((sessions.reduce((sum, item) => sum + item.durationMinutes, 0) / 60) * 10) / 10,
+    },
+  });
+}
+
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
+  const sessionUser = session?.user as SessionUser | undefined;
 
-  if (!session?.user) {
+  if (!sessionUser) {
     return NextResponse.json({ message: "Sign in before generating a study plan." }, { status: 401 });
+  }
+
+  const userId = await getCurrentUserId(sessionUser);
+
+  if (!userId) {
+    return NextResponse.json({ message: "Could not find your account." }, { status: 404 });
   }
 
   const body = (await request.json().catch(() => null)) as GenerateBody | null;
@@ -161,13 +392,17 @@ export async function POST(request: Request) {
     }
   }
 
+  const sessions = planned.sort(
+    (a, b) =>
+      weekDays.indexOf(a.dayOfWeek as (typeof weekDays)[number]) -
+        weekDays.indexOf(b.dayOfWeek as (typeof weekDays)[number]) ||
+      toMinutes(a.startTime) - toMinutes(b.startTime),
+  );
+  const planId = await savePlanForUser(userId, rows, sessions);
+
   return NextResponse.json({
-    sessions: planned.sort(
-      (a, b) =>
-        weekDays.indexOf(a.dayOfWeek as (typeof weekDays)[number]) -
-          weekDays.indexOf(b.dayOfWeek as (typeof weekDays)[number]) ||
-        toMinutes(a.startTime) - toMinutes(b.startTime),
-    ),
+    planId,
+    sessions,
     summary: {
       classCount: rows.length,
       courseCount: courses.length,

@@ -14,8 +14,20 @@ declare module "@prisma/client" {
     update(args: unknown): Promise<UserRecord>;
   };
 
+  type GenericDelegate = {
+    findFirst(args?: unknown): Promise<unknown>;
+    create(args: unknown): Promise<unknown>;
+    createMany(args: unknown): Promise<unknown>;
+    upsert(args: unknown): Promise<unknown>;
+    update(args: unknown): Promise<unknown>;
+    deleteMany(args: unknown): Promise<unknown>;
+  };
+
   export class PrismaClient {
     constructor(options?: unknown);
     users: UserDelegate;
+    courses: GenericDelegate;
+    study_plans: GenericDelegate;
+    study_plan_items: GenericDelegate;
   }
 }
