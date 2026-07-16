@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 
 export default function HomePage() {
   return (
@@ -87,17 +86,17 @@ export default function HomePage() {
                   <div className="rounded-3xl border border-border bg-card p-5">
                     <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Upcoming</p>
                     <ul className="mt-4 space-y-3 text-sm text-foreground">
-                      <li>📘 Physics quiz prep</li>
-                      <li>🧠 Data structures review</li>
-                      <li>✍️ English essay outline</li>
+                      <li>Physics quiz prep</li>
+                      <li>Data structures review</li>
+                      <li>English essay outline</li>
                     </ul>
                   </div>
                   <div className="rounded-3xl border border-border bg-card p-5">
                     <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Highlights</p>
                     <ol className="mt-4 space-y-3 text-sm text-foreground">
-                      <li>✅ Smart reminders</li>
-                      <li>📊 Performance charts</li>
-                      <li>🤝 Study buddies</li>
+                      <li>Smart reminders</li>
+                      <li>Performance charts</li>
+                      <li>Study buddies</li>
                     </ol>
                   </div>
                 </div>

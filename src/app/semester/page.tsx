@@ -87,7 +87,7 @@ export default function SemesterPage() {
 
             {saved ? (
               <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                Semester details saved successfully.
+                Semester details saved for this session. Database sync is the next backend step.
               </div>
             ) : null}
           </div>

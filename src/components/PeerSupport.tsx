@@ -162,7 +162,7 @@ export function PeerSupport() {
                     <h4 className="font-semibold mb-1">{match.name}</h4>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                       <span>{match.studyHours}</span>
-                      <span>•</span>
+                      <span aria-hidden="true">/</span>
                       <span>{match.timezone}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -263,7 +263,7 @@ export function PeerSupport() {
                 <div className="flex gap-4">
                   <div className="flex flex-col items-center gap-2 min-w-[60px]">
                     <button className="w-10 h-10 rounded-lg border border-border hover:bg-accent transition-colors flex items-center justify-center">
-                      ▲
+                      Up
                     </button>
                     <span className="font-semibold">{item.votes}</span>
                   </div>

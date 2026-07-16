@@ -1,16 +1,48 @@
 'use client';
 
+import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+
+function getCallbackUrl() {
+  return new URLSearchParams(window.location.search).get('callbackUrl') ?? '/dashboard';
+}
 
 export default function LoginPage() {
   const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleGoogleSignIn = () => {
     signIn('google', {
-      callbackUrl: '/dashboard',
+      callbackUrl: getCallbackUrl(),
       prompt: 'select_account',
     });
+  };
+
+  const handleCredentialsSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+    setIsSubmitting(true);
+
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+    });
+
+    setIsSubmitting(false);
+
+    if (result?.error) {
+      setError('Invalid email or password.');
+      return;
+    }
+
+    router.push(getCallbackUrl());
+    router.refresh();
   };
 
   return (
@@ -22,7 +54,7 @@ export default function LoginPage() {
           <p className="mt-3 text-muted-foreground">Access your study plan, goals, and progress at a glance.</p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           <button
             type="button"
             onClick={handleGoogleSignIn}
@@ -42,59 +74,62 @@ export default function LoginPage() {
             <span className="text-xs uppercase tracking-[0.3em] text-muted-foreground">or</span>
             <div className="h-px flex-1 bg-border" />
           </div>
-        </div>
 
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            router.push('/dashboard');
-          }}
-          className="space-y-6"
-        >
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
-              Email address
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              className="w-full rounded-2xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-              required
-            />
-          </div>
+          <form onSubmit={handleCredentialsSignIn} className="space-y-5">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+                Email address
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@example.com"
+                className="w-full rounded-2xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                autoComplete="email"
+                required
+              />
+            </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              className="w-full rounded-2xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-              required
-            />
-          </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Enter your password"
+                className="w-full rounded-2xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                autoComplete="current-password"
+                required
+              />
+            </div>
 
-          <button
-            type="submit"
-            className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-violet-600 px-5 py-3 text-white text-sm font-semibold shadow-lg shadow-blue-500/10 transition hover:shadow-xl"
-          >
-            Login
-          </button>
+            {error ? (
+              <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </p>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-violet-600 px-5 py-3 text-white text-sm font-semibold shadow-lg shadow-blue-500/10 transition hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isSubmitting ? 'Logging in...' : 'Login'}
+            </button>
+          </form>
 
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{' '}
-            <button
-              type="button"
-              onClick={() => router.push('/signup')}
-              className="font-semibold text-primary hover:underline"
-            >
+            <Link href="/signup" className="font-semibold text-primary hover:underline">
               Sign up
-            </button>
+            </Link>
           </p>
-        </form>
+        </div>
       </div>
     </div>
   );
